@@ -2,8 +2,8 @@
 <!--
   SStudio's passkey page (ADR 0011), served at https://s-studio-hq.github.io/authenticate/passkey (GitHub Pages,
   repo S-Studio-HQ/s-studio-hq.github.io). The source is site/ in SStudio - the outermost
-  layer (ADR 0012): only browser_passkey.py knows it. Change it there, then run scripts/publish_web.py.
-  Its script is assets/authenticate-passkey.js: the names after "#" are PageKey, the modes PageMode
+  layer (ADR 0012): only browser_passkey.py knows it. Change it there, then run scripts/publish_site.py.
+  Its script is assets/passkey.js: the names after "#" are PageKey, the modes PageMode
   (tests/utils/crypto/test_browser_passkey.py checks they match).
 
   The page gets everything from the "#" part of its address, which the browser never sends to the web server,
@@ -16,9 +16,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src http://127.0.0.1:*; form-action http://127.0.0.1:*; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src http://127.0.0.1:*; form-action http://127.0.0.1:*; base-uri 'none'">
 <meta name="color-scheme" content="dark">
 <title>SStudio passkey</title>
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../assets/glass.css">
 </head>
 <body>
@@ -54,6 +55,6 @@
   <button id="btnCancel" class="quiet" hidden>Cancel - type the backup key instead</button>
   <div id="status" class="status" role="status">Reading the request...</div>
 </main>
-<script src="../assets/authenticate-passkey.js"></script>
+<script src="../assets/passkey.js"></script>
 </body>
 </html>

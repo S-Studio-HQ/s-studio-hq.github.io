@@ -5,7 +5,7 @@
 
 :root {
   color-scheme: dark;
-  --bg: #07080c;
+  --bg: #04070d;
   --fg: #f5f5f7;
   --muted: #a8adb8;
   --glass: rgba(255, 255, 255, 0.07);
@@ -38,7 +38,7 @@ body {
   overflow-x: hidden;
 }
 
-/* The light behind the glass: three soft blobs that drift slowly */
+/* The light behind the glass: three soft blobs that drift slowly - "Deep ocean": navy and cyan */
 .light { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .light span {
   position: absolute;
@@ -49,9 +49,9 @@ body {
   opacity: 0.55;
   animation: drift 28s ease-in-out infinite alternate;
 }
-.light span:nth-child(1) { background: #2f5bff; top: -25vmax; left: -15vmax; }
-.light span:nth-child(2) { background: #8a3ffc; bottom: -30vmax; right: -20vmax; animation-delay: -9s; }
-.light span:nth-child(3) { background: #00b3a4; top: 30%; left: 45%; width: 40vmax; height: 40vmax; opacity: 0.35;
+.light span:nth-child(1) { background: #0a3d91; top: -25vmax; left: -15vmax; }
+.light span:nth-child(2) { background: #00a6d6; bottom: -30vmax; right: -20vmax; animation-delay: -9s; }
+.light span:nth-child(3) { background: #1b2a6b; top: 30%; left: 45%; width: 40vmax; height: 40vmax; opacity: 0.35;
   animation-delay: -18s; }
 @keyframes drift {
   from { transform: translate(0, 0) scale(1); }
