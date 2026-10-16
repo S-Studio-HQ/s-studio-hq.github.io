@@ -71,6 +71,8 @@ const vRequest = ReadRequest();
 history.replaceState(null, "", location.pathname);  // the token leaves the address bar and the history
 
 function Show(Message, IsBad) { vStatus.textContent = Message; vStatus.classList.toggle("bad", !!IsBad); }
+// Browsers let a page close only a tab a script opened; where they refuse, the "Done" text stays.
+function CloseSoon() { setTimeout(() => window.close(), 1500); }
 function ToB64Url(Buffer) {
   return btoa(String.fromCharCode(...new Uint8Array(Buffer))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -150,12 +152,16 @@ async function Go() {
     vAnswer = { [Key.Error]: vError.name || String(vError) };
   }
   Show(Text.Sending);
-  if (await Send(vAnswer)) Show(vAnswer[Key.Error] ? Text.Cancelled : Text.Done, !!vAnswer[Key.Error]);
+  if (!(await Send(vAnswer))) return;
+  Show(vAnswer[Key.Error] ? Text.Cancelled : Text.Done, !!vAnswer[Key.Error]);
+  CloseSoon();
 }
 
 async function Cancel() {
   vGo.disabled = vCancel.disabled = true;
-  if (await Send({ [Key.Error]: Text.Cancel })) Show(Text.Cancelled);
+  if (!(await Send({ [Key.Error]: Text.Cancel }))) return;
+  Show(Text.Cancelled);
+  CloseSoon();
 }
 
 if (!vRequest) Show(Text.BadRequest, true);
