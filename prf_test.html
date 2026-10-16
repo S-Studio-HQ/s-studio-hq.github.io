@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SStudio passkey PRF test</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 720px; margin: 32px auto; padding: 0 16px; }
+  button { font: inherit; padding: 8px 16px; margin: 4px 8px 4px 0; }
+  pre { background: #f2f2f2; color: #111; padding: 12px; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<h1>SStudio passkey PRF test</h1>
+<p>Throwaway test (ADR 0011): does a passkey give the same PRF answer every time, also when an iPhone
+confirms through the QR code? The passkey made here belongs to <code id="codeHost"></code> and is only for
+this test.</p>
+<ol>
+  <li><button id="btnCreate">1. Create test passkey</button> (once; choose the iPhone / "another device")</li>
+  <li><button id="btnAsk">2. Ask for the PRF answer</button> (press it at least twice)</li>
+</ol>
+<pre id="preLog">Ready.</pre>
+<script>
+// A fixed PRF input, so every browser and computer asks the same question.
+const PrfInput = new TextEncoder().encode("SStudio PRF test input - fixed!!");
+const StorageKey = "SStudioPrfTestLastAnswer";
+const preLog = document.getElementById("preLog");
+
+function Log(Text) { preLog.textContent += "\n" + Text; }
+function ToHex(Buffer) { return [...new Uint8Array(Buffer)].map(b => b.toString(16).padStart(2, "0")).join(""); }
+function Random(Length) { return crypto.getRandomValues(new Uint8Array(Length)); }
+
+function ShowAnswer(First) {
+  const strAnswer = ToHex(First);
+  const strLast = localStorage.getItem(StorageKey);
+  Log("PRF answer (" + First.byteLength + " bytes): " + strAnswer);
+  if (strLast) Log(strLast === strAnswer ? "RESULT: SAME as the last answer - PRF works." : "RESULT: DIFFERENT from the last answer - PRF is not usable this way.");
+  else Log("First answer saved. Press button 2 again to compare.");
+  localStorage.setItem(StorageKey, strAnswer);
+}
+
+async function Create() {
+  Log("\nCreating a passkey...");
+  const vCredential = await navigator.credentials.create({ publicKey: {
+    rp: { id: location.hostname, name: "SStudio PRF test" },
+    user: { id: Random(16), name: "sstudio-prf-test", displayName: "SStudio PRF test" },
+    challenge: Random(32),
+    pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+    authenticatorSelection: { residentKey: "required", userVerification: "required" },
+    extensions: { prf: { eval: { first: PrfInput } } },
+  } });
+  const vPrf = vCredential.getClientExtensionResults().prf;
+  Log("Created. Credential ID: " + ToHex(vCredential.rawId));
+  Log("Transports: " + (vCredential.response.getTransports ? vCredential.response.getTransports().join(", ") : "?"));
+  Log("PRF enabled: " + (vPrf ? vPrf.enabled : "no PRF in the reply"));
+  localStorage.removeItem(StorageKey);
+  if (vPrf && vPrf.results && vPrf.results.first) ShowAnswer(vPrf.results.first);
+}
+
+async function Ask() {
+  Log("\nAsking the passkey...");
+  const vAssertion = await navigator.credentials.get({ publicKey: {
+    rpId: location.hostname,
+    challenge: Random(32),
+    userVerification: "required",
+    extensions: { prf: { eval: { first: PrfInput } } },
+  } });
+  const vPrf = vAssertion.getClientExtensionResults().prf;
+  Log("Confirmed. Credential ID: " + ToHex(vAssertion.rawId));
+  if (vPrf && vPrf.results && vPrf.results.first) ShowAnswer(vPrf.results.first);
+  else Log("RESULT: NO PRF answer came back.");
+}
+
+function Run(Action) { return () => Action().catch(vE => Log("ERROR: " + vE.name + ": " + vE.message)); }
+document.getElementById("btnCreate").addEventListener("click", Run(Create));
+document.getElementById("btnAsk").addEventListener("click", Run(Ask));
+Log(window.PublicKeyCredential ? "This browser supports passkeys." : "This browser does NOT support passkeys.");
+document.getElementById("codeHost").textContent = location.hostname;
+Log("Page: " + location.origin + " (must be https://s-studio-hq.github.io or http://localhost:...)");
+</script>
+</body>
+</html>
