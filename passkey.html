@@ -34,7 +34,8 @@
   <h1 id="title">SStudio passkey</h1>
   <p id="help">SStudio asks your passkey for the secret that opens a main key.</p>
   <div id="buttons">
-    <button id="btnGo" class="main" hidden>Confirm with your passkey</button>
+    <button id="btnHere" class="main" hidden>This device</button>
+    <button id="btnPhone" class="main" hidden>iPhone - scan a QR code</button>
     <button id="btnCancel" hidden>Cancel - type the backup key instead</button>
   </div>
   <p id="status">Reading the request...</p>
@@ -46,13 +47,21 @@ const Key = { Mode: "m", Port: "port", Token: "t", CredentialId: "id", PrfInput:
   UserName: "u", DisplayName: "d", Prf: "prf", PrfEnabled: "prfEnabled", Error: "error", Way: "way" };
 const Mode = { Create: "create", Ask: "ask" };
 const Way = { Fetch: "fetch", Form: "form" };
+// Where the passkey is: on this computer, or on a phone found by a QR code (the browser's "hybrid" way)
+const Device = { Here: "here", Phone: "phone" };
 const Text = {
   CreateTitle: "Create the SStudio passkey",
-  CreateHelp: "Press the button, then save the passkey with Touch ID (in iCloud Keychain, so the iPhone has it too). No Touch ID? Choose a phone and scan the QR code with the iPhone (Bluetooth on).",
-  CreateButton: "Create the passkey",
+  CreateHelp: "Where should the passkey be saved? On this Mac it goes into iCloud Keychain, so the iPhone has it too. The iPhone: scan the QR code with its camera (Bluetooth on at both).",
   AskTitle: "Confirm with your passkey",
-  AskHelp: "Press the button, then confirm with Touch ID - or choose a phone and scan the QR code with the iPhone (Bluetooth on).",
-  AskButton: "Confirm with your passkey",
+  AskHelp: "Where is your passkey? The iPhone: scan the QR code with its camera, then Face ID (Bluetooth on at both).",
+  HereMac: "This Mac - Touch ID",
+  HerePc: "This PC - Windows Hello",
+  HereOther: "This device",
+  CreateHereMac: "Save on this Mac - Touch ID",
+  CreateHerePc: "Save on this PC - Windows Hello",
+  CreateHereOther: "Save on this device",
+  Phone: "iPhone - scan a QR code",
+  CreatePhone: "Save on the iPhone - scan a QR code",
   Ready: "Waiting for you.",
   Asking: "Waiting for the passkey...",
   Sending: "Sending the answer to SStudio on this computer...",
@@ -65,7 +74,8 @@ const Text = {
 };
 
 const vStatus = document.getElementById("status");
-const vGo = document.getElementById("btnGo");
+const vHere = document.getElementById("btnHere");
+const vPhone = document.getElementById("btnPhone");
 const vCancel = document.getElementById("btnCancel");
 const vRequest = ReadRequest();
 history.replaceState(null, "", location.pathname);  // the token leaves the address bar and the history
@@ -92,25 +102,36 @@ function ReadRequest() {
   return bolMode && bolPort && vRequest[Key.Token] && bolAsk && bolCreate ? vRequest : null;
 }
 
-async function Create() {
+function HereName(IsCreate) {
+  const strAgent = navigator.userAgent;
+  if (/Macintosh|Mac OS X/.test(strAgent)) return IsCreate ? Text.CreateHereMac : Text.HereMac;
+  if (/Windows/.test(strAgent)) return IsCreate ? Text.CreateHerePc : Text.HerePc;
+  return IsCreate ? Text.CreateHereOther : Text.HereOther;
+}
+
+async function Create(Where) {
   const vCredential = await navigator.credentials.create({ publicKey: {
     rp: { id: location.hostname, name: Text.RpName },
     user: { id: FromB64Url(vRequest[Key.UserId]), name: vRequest[Key.UserName],
       displayName: vRequest[Key.DisplayName] || vRequest[Key.UserName] },
     challenge: crypto.getRandomValues(new Uint8Array(32)),
     pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-    authenticatorSelection: { residentKey: "required", userVerification: "required" },
+    authenticatorSelection: { residentKey: "required", userVerification: "required",
+      authenticatorAttachment: Where === Device.Here ? "platform" : "cross-platform" },
+    hints: [Where === Device.Here ? "client-device" : "hybrid"],
     extensions: { prf: {} },
   } });
   const vPrf = vCredential.getClientExtensionResults().prf;
   return { [Key.CredentialId]: ToB64Url(vCredential.rawId), [Key.PrfEnabled]: String(!!(vPrf && vPrf.enabled)) };
 }
 
-async function Ask() {
+async function Ask(Where) {
   const vAssertion = await navigator.credentials.get({ publicKey: {
     rpId: location.hostname,
     challenge: crypto.getRandomValues(new Uint8Array(32)),
-    allowCredentials: [{ type: "public-key", id: FromB64Url(vRequest[Key.CredentialId]) }],
+    allowCredentials: [{ type: "public-key", id: FromB64Url(vRequest[Key.CredentialId]),
+      transports: Where === Device.Here ? ["internal"] : ["hybrid"] }],
+    hints: [Where === Device.Here ? "client-device" : "hybrid"],
     userVerification: "required",
     extensions: { prf: { eval: { first: FromB64Url(vRequest[Key.PrfInput]) } } },
   } });
@@ -142,12 +163,14 @@ async function Send(Answer) {
   return false;
 }
 
-async function Go() {
-  vGo.disabled = vCancel.disabled = true;
+function Lock() { vHere.disabled = vPhone.disabled = vCancel.disabled = true; }
+
+async function Go(Where) {
+  Lock();
   let vAnswer;
   try {
     Show(Text.Asking);
-    vAnswer = vRequest[Key.Mode] === Mode.Create ? await Create() : await Ask();
+    vAnswer = vRequest[Key.Mode] === Mode.Create ? await Create(Where) : await Ask(Where);
   } catch (vError) {
     vAnswer = { [Key.Error]: vError.name || String(vError) };
   }
@@ -158,7 +181,7 @@ async function Go() {
 }
 
 async function Cancel() {
-  vGo.disabled = vCancel.disabled = true;
+  Lock();
   if (!(await Send({ [Key.Error]: Text.Cancel }))) return;
   Show(Text.Cancelled);
   CloseSoon();
@@ -170,9 +193,11 @@ else {
   const bolCreate = vRequest[Key.Mode] === Mode.Create;
   document.getElementById("title").textContent = bolCreate ? Text.CreateTitle : Text.AskTitle;
   document.getElementById("help").textContent = bolCreate ? Text.CreateHelp : Text.AskHelp;
-  vGo.textContent = bolCreate ? Text.CreateButton : Text.AskButton;
-  vGo.hidden = vCancel.hidden = false;
-  vGo.addEventListener("click", Go);
+  vHere.textContent = HereName(bolCreate);
+  vPhone.textContent = bolCreate ? Text.CreatePhone : Text.Phone;
+  vHere.hidden = vPhone.hidden = vCancel.hidden = false;
+  vHere.addEventListener("click", () => Go(Device.Here));
+  vPhone.addEventListener("click", () => Go(Device.Phone));
   vCancel.addEventListener("click", Cancel);
   Show(Text.Ready);
 }
