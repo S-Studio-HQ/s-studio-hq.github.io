@@ -1,7 +1,9 @@
 <!doctype html>
 <!--
-  The old address of SStudio's passkey page (until 2026-10-16). It sends the browser on to authenticate/authenticate-passkey with
-  the same "#" part, which stays in the browser. Source: src/SStudio/utils/crypto/web/ in SStudio.
+  The first address of SStudio's passkey page (until 2026-10-16). It sends the browser on to authenticate/passkey with the same "#" part, which stays in the browser.
+  Delete it once every computer runs an SStudio whose PageUrl is .../authenticate/passkey (the Mac and the
+  Windows PC both updated past 2026-10-17): no older SStudio opens this address then.
+  Source: site/ in SStudio.
 -->
 <html lang="en">
 <head>
@@ -11,13 +13,13 @@
 <meta name="color-scheme" content="dark">
 <title>SStudio passkey</title>
 <link rel="stylesheet" href="assets/glass.css">
-<script>location.replace("authenticate/authenticate-passkey" + location.hash);</script>
+<script>location.replace("authenticate/passkey" + location.hash);</script>
 </head>
 <body>
 <div class="light" aria-hidden="true"><span></span><span></span><span></span></div>
 <main class="card glass">
   <h1>SStudio passkey</h1>
-  <p>This page moved to <a href="authenticate/authenticate-passkey">authenticate/authenticate-passkey</a>.</p>
+  <p>This page moved to <a href="authenticate/passkey">authenticate/passkey</a>.</p>
 </main>
 </body>
 </html>
