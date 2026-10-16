@@ -15,7 +15,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="referrer" content="no-referrer">
+<!-- "same-origin": no Referer leaves this site, but a form post still carries its Origin, which SStudio checks
+     ("no-referrer" made it "null", so SStudio refused the form post the browser falls back to) -->
+<meta name="referrer" content="same-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src http://127.0.0.1:*; form-action http://127.0.0.1:*; base-uri 'none'">
 <meta name="color-scheme" content="dark">
 <title>SStudio passkey</title>

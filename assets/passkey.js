@@ -28,7 +28,8 @@ const Text = {
   CreatePhoneNote: "Scan a QR code - Bluetooth on at both",
   Ready: "Waiting for you.",
   Asking: "Waiting for the passkey...",
-  Sending: "Sending the answer to SStudio on this computer...",
+  Sending: "Sending the answer to SStudio on this computer... If the browser asks to reach apps on this device, " +
+    "choose Allow.",
   Done: "Done - SStudio has the answer. You can close this tab.",
   Cancelled: "Cancelled - SStudio asks for the backup key instead. You can close this tab.",
   BadRequest: "This page must be opened by SStudio (the address is missing what it needs).",
@@ -43,6 +44,8 @@ const vPhone = document.getElementById("btnPhone");
 const vCancel = document.getElementById("btnCancel");
 const vRequest = ReadRequest();
 history.replaceState(null, "", location.pathname);  // the token leaves the address bar and the history
+// A new request in a tab already on this page changes only the "#" part, which doesn't load the page again
+window.addEventListener("hashchange", () => location.reload());
 
 function Show(Message, State) {
   vStatus.textContent = Message;
